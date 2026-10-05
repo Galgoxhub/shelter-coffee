@@ -277,6 +277,21 @@ section.block{padding-block:clamp(5rem,11vw,8.5rem)}
 .checkout{width:100%;justify-content:center;background:var(--carbon);color:var(--crema)}
 .checkout:hover{background:var(--madera);color:var(--crema)}
 .checkout[disabled]{opacity:.35;pointer-events:none}
+/* Club Shelter — Supabase */
+.club .wrap{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,6vw,5rem);align-items:start}
+@media (max-width:860px){.club .wrap{grid-template-columns:1fr}}
+.tiers{list-style:none;margin:2rem 0 0;padding:0;display:grid;gap:1px;background:var(--linea-d)}
+.tiers li{display:flex;justify-content:space-between;gap:1rem;background:var(--carbon);padding:1rem 1.2rem}
+.tiers b{font:600 .78rem var(--display);font-variation-settings:"wdth" 120;letter-spacing:.16em;text-transform:uppercase}
+.tiers span{color:var(--madera-2)}
+.club-form{display:grid;gap:1rem;background:var(--carbon-2);padding:clamp(1.4rem,4vw,2.4rem)}
+.club-form label{display:grid;gap:.4rem;font-size:.85rem;color:var(--piedra)}
+.club-form input{font:inherit;color:var(--crema);background:var(--carbon);border:1px solid var(--linea-d);border-radius:0;padding:.9rem 1rem;width:100%}
+.club-form input:focus{outline:none;border-color:var(--madera-2)}
+.club-form .btn{justify-content:center}
+.club-form .btn[disabled]{opacity:.5;pointer-events:none}
+.club-msg{min-height:1.4em;font-size:.9rem;margin:0}
+.club-msg.ok{color:var(--verde-2)}.club-msg.err{color:var(--madera-2)}
 .toast{position:fixed;left:50%;bottom:24px;transition:transform .4s var(--ease),opacity .3s,visibility .3s;transform:translate(-50%,140%);background:var(--carbon);color:var(--crema);padding:.85rem 1.3rem;font-size:.92rem;z-index:60;transition:transform .4s var(--ease);max-width:calc(100% - 32px);text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.3)}
 .toast{opacity:0;visibility:hidden}
 .toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
@@ -311,6 +326,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-ite
       <a href="#sedes">Sedes</a>
       <a href="#carta">Carta</a>
       <a href="#tienda">Tienda</a>
+      <a href="#club">Club</a>
       <a class="cta" href="#visitanos">Visitanos</a>
       <button class="cart-btn" type="button" id="cartBtn" aria-label="Abrir carrito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><b id="cartCount">0</b></button>
     </nav>
@@ -500,6 +516,29 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-ite
       </div>
       <div class="products" id="products"></div>
       <p class="shop-note fade">Productos y precios de ejemplo para la maqueta.</p>
+    </div>
+  </section>
+
+  <section class="block club" id="club">
+    <div class="wrap">
+      <div>
+        <div class="head" style="margin-bottom:0">
+          <span class="label fade">Club Shelter</span>
+          <h2 class="split">Sumá puntos con cada café.</h2>
+          <p class="muted fade">Dejanos tu teléfono y empezá a juntar puntos. Cuantas más visitas, mejor tu descuento.</p>
+        </div>
+        <ul class="tiers fade" id="tiers" hidden></ul>
+      </div>
+      <form class="club-form fade" id="clubForm" novalidate>
+        <label>Número de teléfono
+          <input type="tel" name="tel" inputmode="tel" autocomplete="tel" placeholder="11 2345 6789" required>
+        </label>
+        <label>Mail (opcional)
+          <input type="email" name="mail" autocomplete="email" placeholder="vos@mail.com">
+        </label>
+        <button class="btn" type="submit">Sumarme al club</button>
+        <p class="club-msg" id="clubMsg" role="status"></p>
+      </form>
     </div>
   </section>
 
@@ -717,6 +756,34 @@ document.querySelectorAll('.gallery').forEach(g=>{
   tr.addEventListener('scroll',upd,{passive:true});upd();
 });
 
+
+/* Club Shelter: Supabase (clave pública anon; la seguridad la da RLS) */
+const SB_URL='https://xydrdwmrhkmnkwtgwkse.supabase.co/rest/v1/';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5ZHJkd21yaGttbmt3dGd3a3NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTc2MjEsImV4cCI6MjEwNjc5MzYyMX0.EBmox2qL1Cl0irvxWhC7vkb4CZ4bJwN4CKuKRh06jeA';
+const sb=(path,opt={})=>fetch(SB_URL+path,{...opt,headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',...opt.headers}});
+
+sb('Gama%20de%20clientes?select=*&order=Puntos.asc').then(r=>r.ok?r.json():[]).then(rows=>{
+  if(!rows.length)return;
+  const ul=document.getElementById('tiers');
+  ul.innerHTML=rows.map(g=>`<li><b>${Number(g['Puntos'])||0} puntos</b><span>${Number(g['Descuento'])||0}% de descuento</span></li>`).join('');
+  ul.hidden=false;
+}).catch(()=>{});
+
+document.getElementById('clubForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f=e.target,msg=document.getElementById('clubMsg'),btn=f.querySelector('button');
+  const tel=f.tel.value.replace(/\D/g,''),mail=f.mail.value.trim();
+  const say=(t,c)=>{msg.textContent=t;msg.className='club-msg '+c};
+  if(tel.length<8||tel.length>15)return say('Revisá el teléfono: solo números, con código de área.','err');
+  if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail))return say('Revisá el mail.','err');
+  btn.disabled=true;say('Enviando…','');
+  try{
+    const r=await sb('Clientes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({'Número de teléfono':Number(tel),'Mail':mail||null})});
+    if(!r.ok)throw new Error(r.status);
+    f.reset();say('¡Listo! Ya sos parte del Club Shelter.','ok');
+  }catch(err){say('No pudimos registrarte. Probá de nuevo en un rato.','err')}
+  finally{btn.disabled=false}
+});
 </script>
 </body>
 </html>

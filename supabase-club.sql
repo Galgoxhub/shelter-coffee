@@ -8,7 +8,16 @@ drop policy if exists "La web puede sumar clientes" on public."Clientes";
 create policy "La web puede sumar clientes"
   on public."Clientes" for insert
   to anon
-  with check ("ID_cliente" is null and "Frecuencia Mensual" is null);
+  with check (
+    "ID_cliente" is null
+    and "Frecuencia Mensual" is null
+    -- Nadie puede anotarse en un nivel alto: entra sin nivel o en el más bajo.
+    and (
+      "Gama de cliente" is null
+      or "Gama de cliente" = (select g."Gama de cliente" from public."Gama de clientes" g
+                              order by g."Puntos" asc nulls first limit 1)
+    )
+  );
 
 -- Gama de clientes: la web solo puede LEER los niveles (puntos y descuento).
 alter table public."Gama de clientes" enable row level security;
